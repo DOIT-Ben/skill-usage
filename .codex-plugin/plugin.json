@@ -1,0 +1,38 @@
+{
+  "name": "skill-usage",
+  "version": "1.0.0",
+  "description": "Analyze AI agent conversation history to show which skills you actually use vs. which are just taking up space.",
+  "author": {
+    "name": "Skill Usage Maintainers"
+  },
+  "homepage": "https://github.com/DOIT-Ben/skill-usage",
+  "repository": "https://github.com/DOIT-Ben/skill-usage",
+  "license": "MIT",
+  "keywords": [
+    "skill",
+    "usage",
+    "analytics",
+    "statistics",
+    "cleanup",
+    "analysis",
+    "conversation-history"
+  ],
+  "skills": "./",
+  "interface": {
+    "displayName": "Skill Usage Analyzer",
+    "shortDescription": "Analyze which skills you actually use.",
+    "longDescription": "Scans Codex, Claude Code, and Hermes conversation logs to show which skills you actually use, how often, and which ones are safe to remove. Distinguishes real usage from metadata noise.",
+    "developerName": "Skill Usage Maintainers",
+    "category": "Productivity",
+    "capabilities": [
+      "Read"
+    ],
+    "websiteURL": "https://github.com/DOIT-Ben/skill-usage",
+    "defaultPrompt": [
+      "Analyze my skill usage history",
+      "Which skills do I actually use?",
+      "Show me which skills I can safely remove"
+    ],
+    "brandColor": "#10B981"
+  }
+}

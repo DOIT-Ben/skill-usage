@@ -1,0 +1,14 @@
+.DS_Store
+Thumbs.db
+node_modules/
+.env
+.env.*
+*.log
+*.tmp
+*.bak
+dist/
+coverage/
+skill-usage-report.json
+skill-usage-report-*.json
+history-report*.json
+audit-patterns.js
