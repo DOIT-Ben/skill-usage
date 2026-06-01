@@ -4,10 +4,9 @@
 
 ### Changed
 
-- Made `skill-usage` the canonical package name for the deep skill usage audit workflow.
-- Merged the former `skill-usage-auditor` workflow into this repository.
+- Made `skill-usage` the public package name for the deep skill usage audit workflow.
 - Replaced the main skill instructions with strict-call, wide-mention, and coverage-audit semantics.
-- Updated plugin metadata to use `DOIT-Ben` and the canonical `skill-usage` repository.
+- Updated plugin metadata for the public `skill-usage` repository.
 
 ### Added
 
