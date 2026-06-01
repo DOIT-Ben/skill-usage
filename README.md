@@ -1,39 +1,35 @@
 # skill-usage
 
-`skill-usage` is an audit-grade skill usage analyzer for AI agent logs. It ranks which skills are actually used, separates strict invocation evidence from noisy mentions, and reports which sources were scanned or excluded.
+English: audit-grade skill usage analyzer for AI agent logs.
 
-`skill-usage` 是一个用于统计 AI agent 技能命中率的审计型 skill：它不只 grep 技能名，而是区分真实调用、系统提示噪声、路径清单噪声和补充日志来源，最后给出排名与整理建议。
+`skill-usage` 是一个审计型技能使用分析器，用来统计 AI agent 里哪些 skill 真正被调用了，哪些只是被提到，哪些只是噪声。
 
-## Why This Exists / 为什么需要它
+## 这个仓库做什么
 
-AI agents accumulate skills over time. After installing dozens or hundreds of skills, you need to know:
+- 按 `strictCalls` 排名
+- 区分 `wideMentions` 和真实调用
+- 审计主来源、补充来源、噪声来源
+- 输出 Markdown、CSV、JSON 报告
+- 给出常驻、外置、别名合并、描述优化等建议
 
-- Which skills are actually loaded or read by the agent
-- Which skills only appear in system prompts, paths, inventories, or old reports
-- Which session roots were scanned and which roots were intentionally kept separate
-- Which skills should stay active, move external, merge aliases, or improve descriptions
+## 为什么需要它
 
-## What You Get / 你会得到什么
+AI agent 装多了 skill 之后，很容易只看到“列表里有”，看不到“真的在用”。
+这个工具就是把“看起来有关”与“真正触发过”拆开，免得命中率统计被系统提示、路径清单、旧报告带偏。
 
-- **Canonical ranking**: ranked by `strictCalls`, not raw text mentions
-- **Noise separation**: `strictCalls`, `wideMentions`, `rawRefs`, sessions, and source breakdowns
-- **Coverage audit**: primary, supplement, corpus, SQLite, and noisy request/log source boundaries
-- **Recommendations**: resident, thin router, external/archive, description rewrite, alias normalization
-- **Local-only privacy**: reports aggregate skill names and counts, not raw prompts or secret values
-
-## Quick Start / 快速开始
+## 快速开始
 
 ```bash
 git clone https://github.com/DOIT-Ben/skill-usage.git
 ```
 
-In an agent conversation:
+在对话里直接说：
 
 ```text
-Use skill-usage to rank all skills and explain strict usage vs noisy mentions.
+用 skill-usage 给我统计全部 skills 的命中率，并解释 strictCalls 和 wideMentions 的区别。
 ```
 
-Or run the scanner directly:
+也可以直接跑扫描器：
 
 ```powershell
 $skill = "<path-to-skill-usage>"
@@ -42,93 +38,79 @@ Remove-Item Env:\INCLUDE_SQLITE -ErrorAction SilentlyContinue
 python "$skill\scripts\deep_skill_usage_scan.py"
 ```
 
-## Outputs / 输出
+## 输出
 
-The deep scanner writes:
+深度扫描会生成：
 
 - `skill-usage-deep-report.json`
 - `skill-usage-ranking-deep.md`
-- `skill-usage-source-audit.md`
 - `skill-usage-ranking-deep.csv`
+- `skill-usage-source-audit.md`
 
-The legacy lightweight analyzer is still available at:
+旧版轻量分析器还保留在：
 
 ```powershell
 node "$skill\scripts\analyzer-legacy.js"
 ```
 
-## Evidence Model / 统计口径
+## 统计口径
 
-| Field | Meaning |
+| 字段 | 含义 |
 |---|---|
-| `strictCalls` | Strong evidence of real skill loading or invocation, such as a Skill tool call or reading `SKILL.md` in execution context. |
-| `wideMentions` | Mentions in prompts, system skill lists, paths, docs, permission rules, reports, or caches. Useful as demand/noise signal, not usage count. |
-| `rawRefs` | Raw references before turn/session dedupe. Diagnostic only. |
-| `strictSessions` | Unique sessions with strict usage evidence. |
-| `realRatio` | `strictCalls / wideMentions`; a routing/noise smell, not an absolute quality score. |
+| `strictCalls` | 有明确执行上下文的真实调用证据 |
+| `wideMentions` | 只是在提示词、路径、文档、列表里出现的提及 |
+| `rawRefs` | 去重前的原始引用量 |
+| `strictSessions` | 有真实调用证据的会话数 |
+| `realRatio` | `strictCalls / wideMentions`，更像噪声/触发信号，不是绝对分数 |
 
-## Coverage / 覆盖范围
+## 覆盖范围
 
-Primary ranking sources include:
+主榜会看这些来源：
 
-- Codex sessions and archived sessions
+- Codex sessions 和 archived sessions
 - Codex rollout summaries
 - Claude project transcripts
-- Hermes sessions and logs
+- Hermes sessions / logs
 - OpenClaw / AutoClaw sessions
 - Cursor agent transcripts
-- Mini-agent logs
+- mini-agent logs
 
-Supplement sources are scanned separately by default when relevant:
+补充来源单独审计，不默认并入主榜：
 
 - Cursor / VS Code workspace storage
 - Codex desktop logs
-- Claude local-agent-mode sessions
-- Continue.dev, Trae, Windsurf, opencode, WorkBuddy, CodeBuddy logs
-- SQLite state/log databases when `INCLUDE_SQLITE=1` or `ONLY_SQLITE=1`
+- Claude local-agent sessions
+- Continue.dev、Trae、Windsurf、opencode、WorkBuddy、CodeBuddy logs
+- SQLite 状态库和日志库
 
-See `references/coverage-and-noise-map.md` for the source boundary rules.
+细则见 `references/coverage-and-noise-map.md`。
 
-## Recommendation Rules / 建议规则
+## 建议规则
 
-| Action | Trigger |
+| 动作 | 触发条件 |
 |---|---|
-| Keep resident | High `strictCalls` or broad weekly cross-session use |
-| Add thin router | High need but heavy or low-frequency body |
-| Improve description | High `wideMentions`, low `strictCalls`, clear task demand |
-| Merge alias | Same capability split across names or versions |
-| Keep external | Useful but narrow, low strict usage |
-| Archive or ignore | No strict usage and only noise mentions |
+| 保留常驻 | `strictCalls` 高，且跨会话稳定使用 |
+| 加薄入口 | 需求高，但正文重、频率低 |
+| 优化 description | `wideMentions` 高但 `strictCalls` 低 |
+| 合并别名 | 同一能力被拆成多个名字 |
+| 保留外置 | 有用，但场景窄 |
+| 归档/忽略 | 只有噪声提及，没有真实调用 |
 
-Do not treat `strictCalls = 0` as automatic deletion. It is an archive/external-review candidate, especially for recently installed or strategically important skills.
+`strictCalls = 0` 不等于立刻删除，更适合先看是否是新装、依赖项或策略性技能。
 
-## Environment Variables / 环境变量
+## 隐私
 
-| Variable | Purpose |
-|---|---|
-| `OUTPUT_DIR` | Directory for generated reports. Defaults to current directory. |
-| `REPORT_SUFFIX` | Adds a sanitized suffix to report filenames. |
-| `EXTRA_PATHS_FILE` | Text file of extra paths to scan, one path per line. |
-| `ONLY_EXTRA=1` | Scan only paths from `EXTRA_PATHS_FILE`. |
-| `ONLY_SQLITE=1` | Scan only SQLite sources. |
-| `INCLUDE_SQLITE=1` | Include built-in and extra SQLite sources. |
-| `SKIP_SQLITE=1` | Skip SQLite sources. |
-| `ONLY_SOURCES` | Comma-separated source labels to include. |
-| `MAX_TEXT_BYTES` | Max size for a single text file. |
+分析只在本地进行。报告只应包含技能名、计数、日期和来源，不要带原始提示词、账号信息、token、本机私人路径或无关文本。
 
-## Privacy / 隐私
+## 唯一名称
 
-All analysis is local. The report should contain aggregate skill names, counts, dates, and source labels only. Do not publish raw prompts, session content, account data, tokens, local personal paths, or unrelated user text.
-
-## Canonical Name / 唯一名称
-
-The canonical repository and skill name is:
+唯一 canonical 仓库和 skill 名称是：
 
 ```text
 skill-usage
 ```
 
-`skill-usage-auditor` has been merged into this package as the deep audit workflow.
+`skill-usage-auditor` 已并入这个仓库，作为深度审计工作流。
 
 ## License
 
