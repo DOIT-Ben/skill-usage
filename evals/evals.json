@@ -1,0 +1,23 @@
+{
+  "skill_name": "skill-usage",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "全部 skills 排名一下，别只看当前 Codex sessions，帮我确认有没有漏掉 Claude、Cursor、Hermes、OpenClaw 和编辑器日志。",
+      "expected_output": "Agent runs a discovery-first audit, separates primary and supplement roots, produces canonical ranking plus coverage notes, and does not merge noisy editor logs into main ranking without justification.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "为什么这个 skill 的 wideMentions 特别高，但是 strictCalls 很低？这算命中率差吗？",
+      "expected_output": "Agent explains strictCalls versus wideMentions, identifies system-prompt/path/listing noise, and avoids treating wideMentions as real usage.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "把这次技能命中率审计整理成主榜、补充榜、噪声榜，再给我哪些 skill 应该常驻、哪些该外置、哪些要改 description。",
+      "expected_output": "Agent returns a structured report with main ranking, supplemental/noise boundaries, and actionable recommendations grouped by resident, external/archive, description improvement, and alias normalization.",
+      "files": []
+    }
+  ]
+}

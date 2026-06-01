@@ -293,8 +293,8 @@ for (const [label, fn] of tiers) {
 
 const unused = ranked.filter(r => r.realCalls === 0);
 if (unused.length > 0) {
-  console.log(`\n💡 ${unused.length} skills have zero real usage and may be safe to remove.`);
+  console.log(`\n${unused.length} skills have zero real usage and are archive/external-review candidates.`);
   console.log(`   Check the JSON report for the full list.`);
 }
 
-console.log("\n✅ Analysis complete!");
+console.log("\nAnalysis complete.");

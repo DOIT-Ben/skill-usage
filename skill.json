@@ -28,7 +28,6 @@
       "Write",
       "Interactive"
     ],
-    "websiteURL": "https://github.com/DOIT-Ben/skill-usage",
     "defaultPrompt": [
       "Use skill-usage to rank skills by real usage.",
       "Run a canonical skill usage audit and show me the top skills.",

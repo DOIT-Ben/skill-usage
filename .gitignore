@@ -10,5 +10,12 @@ dist/
 coverage/
 skill-usage-report.json
 skill-usage-report-*.json
+skill-usage-deep-report*.json
+skill-usage-ranking-deep*.md
+skill-usage-ranking-deep*.csv
+skill-usage-source-audit*.md
+skill-usage-*.png
 history-report*.json
 audit-patterns.js
+__pycache__/
+*.pyc

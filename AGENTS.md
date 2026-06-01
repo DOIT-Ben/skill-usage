@@ -6,7 +6,7 @@
 - Project type: public AI skill package
 - Canonical skill entry: `SKILL.md`
 - Canonical package name: `skill-usage`
-- Main deliverables: analyzer script, SKILL.md, README, changelog, plugin metadata
+- Main deliverables: deep audit scanner, SKILL.md, README, changelog, plugin metadata, references, evals
 
 ## Working Mode
 
@@ -24,7 +24,7 @@
 
 ## Core Analyzer Requirements
 
-- Must scan all three platforms: Codex, Claude Code, Hermes
+- Must scan Codex, Claude Code, Hermes, and supported agent/editor transcript roots.
 - Must handle JSON escaping (single, double, quadruple backslashes)
 - Must distinguish real usage from metadata noise
 - Must deduplicate by (platform, session, turn, skill)
@@ -51,18 +51,19 @@ Must detect:
 ## Output Requirements
 
 Must generate:
-1. Console report with top 60 skills
-2. JSON file with full ranking
-3. Tier breakdown (5 tiers)
-4. Cleanup recommendations (realCalls = 0)
+1. JSON file with full ranking
+2. Markdown ranking report
+3. CSV ranking report
+4. Source audit report
+5. Recommendations grouped by resident, external/archive, description rewrite, and alias normalization
 
 ## Tier Definitions (Do Not Change)
 
-- ★★★ 主力: realCalls ≥ 100
-- ★★ 常用: realCalls 20-99
-- ★ 偶用: realCalls 5-19
-- · 尝试: realCalls 1-4
-- ○ 零使用: realCalls = 0
+- ★★★ 主力: strictCalls ≥ 100
+- ★★ 常用: strictCalls 20-99
+- ★ 偶用: strictCalls 5-19
+- · 尝试: strictCalls 1-4
+- ○ 仅提及: strictCalls = 0
 
 ## Verification
 
@@ -71,6 +72,7 @@ Before publishing, verify:
 - Handles missing log directories gracefully
 - Handles malformed JSONL gracefully
 - JSON output is valid
+- Markdown, CSV, and source-audit outputs are created
 - Tier counts add up correctly
 - Real usage detection works for all platforms
 
@@ -109,7 +111,7 @@ Test with:
 
 Only commit files in this repository. Do not commit:
 - Local install directories
-- Generated reports (*.json)
+- Generated reports (*.json, *.md, *.csv)
 - Log files
 - Caches
 - User-specific paths

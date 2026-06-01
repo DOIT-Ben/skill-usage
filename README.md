@@ -1,223 +1,135 @@
 # skill-usage
 
-`skill-usage` analyzes your AI agent conversation history to show which skills you actually use, how often, and which ones are just taking up space.
+`skill-usage` is an audit-grade skill usage analyzer for AI agent logs. It ranks which skills are actually used, separates strict invocation evidence from noisy mentions, and reports which sources were scanned or excluded.
 
-`skill-usage` 是一个 AI agent 技能使用分析工具。它扫描你的对话历史，告诉你哪些 skill 真的在用、哪些只是装了没用、哪些可以安全清理。
+`skill-usage` 是一个用于统计 AI agent 技能命中率的审计型 skill：它不只 grep 技能名，而是区分真实调用、系统提示噪声、路径清单噪声和补充日志来源，最后给出排名与整理建议。
 
 ## Why This Exists / 为什么需要它
 
-AI agents accumulate skills over time. After installing dozens or hundreds of skills, you lose track of:
+AI agents accumulate skills over time. After installing dozens or hundreds of skills, you need to know:
 
-- Which skills you actually depend on vs. which are just listed in system prompts
-- Which skills are used once and forgotten
-- Which skills are worth keeping when cleaning up disk space
-- How your skill usage patterns change over time
-
-`skill-usage` scans your Codex, Claude Code, and Hermes conversation logs, distinguishes real usage from metadata noise, and gives you a ranked report with evidence.
-
-AI agent 用久了会积累大量 skill。装了几十上百个之后，你会不知道：
-
-- 哪些 skill 真的在用，哪些只是出现在 system prompt 里
-- 哪些 skill 用过一次就忘了
-- 清理磁盘时哪些可以安全删除
-- 你的 skill 使用习惯随时间怎么变化
-
-`skill-usage` 扫描你的 Codex、Claude Code、Hermes 对话日志，区分真实使用和元数据噪音，给你一份有证据的排行榜。
-
-## Who It Is For / 适合谁
-
-- 想知道自己最常用哪些 skill 的人
-- 需要清理磁盘、删除无用 skill 的人
-- 想验证新装的 skill 是否真的被用上的人
-- 需要统计团队 skill 使用情况的人
+- Which skills are actually loaded or read by the agent
+- Which skills only appear in system prompts, paths, inventories, or old reports
+- Which session roots were scanned and which roots were intentionally kept separate
+- Which skills should stay active, move external, merge aliases, or improve descriptions
 
 ## What You Get / 你会得到什么
 
-- **真实命中排行**：按真实使用次数排序，不是"被列出"次数
-- **跨平台统计**：Codex + Claude Code + Hermes 全覆盖
-- **真假区分**：区分"真的读了 SKILL.md"和"只是出现在路径里"
-- **会话覆盖率**：每个 skill 跨多少个会话使用
-- **时间范围**：首次使用和最近使用日期
-- **清理建议**：哪些 skill 零使用可以安全删除
+- **Canonical ranking**: ranked by `strictCalls`, not raw text mentions
+- **Noise separation**: `strictCalls`, `wideMentions`, `rawRefs`, sessions, and source breakdowns
+- **Coverage audit**: primary, supplement, corpus, SQLite, and noisy request/log source boundaries
+- **Recommendations**: resident, thin router, external/archive, description rewrite, alias normalization
+- **Local-only privacy**: reports aggregate skill names and counts, not raw prompts or secret values
 
 ## Quick Start / 快速开始
 
-### Installation
-
 ```bash
-# Clone or download this skill
 git clone https://github.com/DOIT-Ben/skill-usage.git
-
-# Or install via npx skills (if published)
-npx skills add DOIT-Ben/skill-usage -g
 ```
 
-### Usage
+In an agent conversation:
 
-In your AI agent conversation:
-
-```
-Use skill-usage to analyze my skill usage history
+```text
+Use skill-usage to rank all skills and explain strict usage vs noisy mentions.
 ```
 
-Or directly:
+Or run the scanner directly:
 
-```
-/skill-usage
-```
-
-The skill will:
-1. Scan your conversation logs (Codex, Claude Code, Hermes)
-2. Distinguish real usage from metadata noise
-3. Generate a ranked report with:
-   - Top skills by real usage
-   - Skills by tier (主力/常用/偶用/尝试/零使用)
-   - Cleanup recommendations
-
-### Output
-
-You'll get:
-
-- **Console report**: Top 60 skills ranked by real usage
-- **JSON file**: `skill-usage-report.json` with full data for all skills
-- **Tier breakdown**: How many skills in each usage tier
-
-## How It Works / 工作原理
-
-### Real Usage Detection
-
-The analyzer distinguishes **real usage** from **metadata noise** by checking:
-
-1. **Subfile access**: Did the agent read `SKILL.md`, `reference.md`, or other skill files?
-2. **Real operations**: Did the skill path appear in `Read`, `Bash`, `cat`, `Get-Content`, or similar commands?
-3. **Turn deduplication**: Multiple accesses in the same turn count as one usage
-
-### Path Coverage
-
-Supports all common skill locations:
-
-- `~/.agents/skills/`
-- `~/.codex/skills/`
-- `~/.claude/skills/`
-- `~/.hermes/skills/`
-- `~/.codex/plugins/cache/*/skills/`
-- OpenAI bundled skills
-
-### Platform Support
-
-- **Codex**: Parses `response_item` with `function_call` and `function_call_output`
-- **Claude Code**: Parses `tool_use` blocks and explicit `Skill` tool calls
-- **Hermes**: Parses `tool_calls` and `tool` role messages
-
-### JSON Escape Handling
-
-Handles nested JSON escaping (e.g., `\\\\skills\\\\` in double-encoded strings).
-
-## Output Schema / 输出格式
-
-### JSON Report
-
-```json
-{
-  "generatedAt": "2026-05-30T...",
-  "scanned": {
-    "codex": 762,
-    "claude": 125,
-    "hermes": 16
-  },
-  "summary": {
-    "totalLines": 866955,
-    "fnCalls": 150495,
-    "hits": 11933,
-    "realHits": 9660,
-    "uniqueSkills": 721
-  },
-  "ranking": [
-    {
-      "skill": "superpowers",
-      "calls": 1287,
-      "realCalls": 1284,
-      "ratio": 3.39,
-      "realRatio": 100,
-      "sessions": 380,
-      "realSessions": 380,
-      "sources": "codex:1286,claude:1",
-      "firstSeen": "2026-05-12",
-      "lastSeen": "2026-05-30"
-    }
-  ]
-}
+```powershell
+$skill = "<path-to-skill-usage>"
+$env:OUTPUT_DIR = (Get-Location).Path
+Remove-Item Env:\INCLUDE_SQLITE -ErrorAction SilentlyContinue
+python "$skill\scripts\deep_skill_usage_scan.py"
 ```
 
-### Field Definitions
+## Outputs / 输出
 
-| Field | Description |
+The deep scanner writes:
+
+- `skill-usage-deep-report.json`
+- `skill-usage-ranking-deep.md`
+- `skill-usage-source-audit.md`
+- `skill-usage-ranking-deep.csv`
+
+The legacy lightweight analyzer is still available at:
+
+```powershell
+node "$skill\scripts\analyzer-legacy.js"
+```
+
+## Evidence Model / 统计口径
+
+| Field | Meaning |
 |---|---|
-| `skill` | Skill name |
-| `calls` | Total turn-deduplicated hits |
-| `realCalls` | Hits with subfile access or real operations |
-| `ratio` | calls / sessions (higher = more intensive use) |
-| `realRatio` | realCalls / calls * 100 (percentage of real usage) |
-| `sessions` | Number of unique sessions |
-| `realSessions` | Sessions with real usage |
-| `sources` | Platform breakdown (codex:N, claude:N, hermes:N) |
-| `firstSeen` | First usage date (YYYY-MM-DD) |
-| `lastSeen` | Most recent usage date (YYYY-MM-DD) |
+| `strictCalls` | Strong evidence of real skill loading or invocation, such as a Skill tool call or reading `SKILL.md` in execution context. |
+| `wideMentions` | Mentions in prompts, system skill lists, paths, docs, permission rules, reports, or caches. Useful as demand/noise signal, not usage count. |
+| `rawRefs` | Raw references before turn/session dedupe. Diagnostic only. |
+| `strictSessions` | Unique sessions with strict usage evidence. |
+| `realRatio` | `strictCalls / wideMentions`; a routing/noise smell, not an absolute quality score. |
 
-## Tiers / 使用梯队
+## Coverage / 覆盖范围
 
-| Tier | Real Calls | Meaning |
-|---|---|---|
-| ★★★ 主力 | ≥ 100 | Core skills you depend on |
-| ★★ 常用 | 20-99 | Frequently used |
-| ★ 偶用 | 5-19 | Occasionally useful |
-| · 尝试 | 1-4 | Tried but not adopted |
-| ○ 零使用 | 0 | Never actually used (safe to remove) |
+Primary ranking sources include:
 
-## Cleanup Recommendations / 清理建议
+- Codex sessions and archived sessions
+- Codex rollout summaries
+- Claude project transcripts
+- Hermes sessions and logs
+- OpenClaw / AutoClaw sessions
+- Cursor agent transcripts
+- Mini-agent logs
 
-Skills with `realCalls: 0` are safe to remove. They appear in system prompts but were never actually invoked.
+Supplement sources are scanned separately by default when relevant:
 
-Before removing, check:
-- Is it a recently installed skill you plan to use?
-- Is it a dependency of another skill?
-- Does it have sentimental value?
+- Cursor / VS Code workspace storage
+- Codex desktop logs
+- Claude local-agent-mode sessions
+- Continue.dev, Trae, Windsurf, opencode, WorkBuddy, CodeBuddy logs
+- SQLite state/log databases when `INCLUDE_SQLITE=1` or `ONLY_SQLITE=1`
 
-## Limitations / 局限性
+See `references/coverage-and-noise-map.md` for the source boundary rules.
 
-- **History only**: Only analyzes past usage, not future intent
-- **Local logs**: Only scans logs on the current machine
-- **No live monitoring**: Runs on-demand, not real-time
-- **Path-based detection**: Skills invoked without file access may be undercounted
+## Recommendation Rules / 建议规则
+
+| Action | Trigger |
+|---|---|
+| Keep resident | High `strictCalls` or broad weekly cross-session use |
+| Add thin router | High need but heavy or low-frequency body |
+| Improve description | High `wideMentions`, low `strictCalls`, clear task demand |
+| Merge alias | Same capability split across names or versions |
+| Keep external | Useful but narrow, low strict usage |
+| Archive or ignore | No strict usage and only noise mentions |
+
+Do not treat `strictCalls = 0` as automatic deletion. It is an archive/external-review candidate, especially for recently installed or strategically important skills.
+
+## Environment Variables / 环境变量
+
+| Variable | Purpose |
+|---|---|
+| `OUTPUT_DIR` | Directory for generated reports. Defaults to current directory. |
+| `REPORT_SUFFIX` | Adds a sanitized suffix to report filenames. |
+| `EXTRA_PATHS_FILE` | Text file of extra paths to scan, one path per line. |
+| `ONLY_EXTRA=1` | Scan only paths from `EXTRA_PATHS_FILE`. |
+| `ONLY_SQLITE=1` | Scan only SQLite sources. |
+| `INCLUDE_SQLITE=1` | Include built-in and extra SQLite sources. |
+| `SKIP_SQLITE=1` | Skip SQLite sources. |
+| `ONLY_SOURCES` | Comma-separated source labels to include. |
+| `MAX_TEXT_BYTES` | Max size for a single text file. |
+
+## Privacy / 隐私
+
+All analysis is local. The report should contain aggregate skill names, counts, dates, and source labels only. Do not publish raw prompts, session content, account data, tokens, local personal paths, or unrelated user text.
+
+## Canonical Name / 唯一名称
+
+The canonical repository and skill name is:
+
+```text
+skill-usage
+```
+
+`skill-usage-auditor` has been merged into this package as the deep audit workflow.
 
 ## License
 
-MIT License
-
-Copyright (c) 2026 Skill Usage Maintainers
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-
-## Contributing
-
-Issues and pull requests welcome at https://github.com/DOIT-Ben/skill-usage
-
-## Changelog
-
-See [CHANGELOG.md](CHANGELOG.md)
+MIT License. See `LICENSE`.

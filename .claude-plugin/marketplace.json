@@ -1,0 +1,32 @@
+{
+  "name": "skill-usage",
+  "id": "skill-usage",
+  "owner": {
+    "name": "DOIT-Ben"
+  },
+  "metadata": {
+    "description": "Audit skill usage with strict-call evidence, noisy-mention separation, and source coverage reports.",
+    "version": "1.1.0"
+  },
+  "plugins": [
+    {
+      "name": "skill-usage",
+      "source": "./",
+      "description": "Canonical skill usage ranking and coverage audit package.",
+      "version": "1.1.0",
+      "author": {
+        "name": "DOIT-Ben"
+      },
+      "keywords": [
+        "skills",
+        "usage",
+        "ranking",
+        "audit",
+        "coverage",
+        "analytics"
+      ],
+      "category": "productivity",
+      "strict": false
+    }
+  ]
+}

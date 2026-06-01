@@ -1,189 +1,149 @@
 ---
 name: skill-usage
-description: "Analyze AI agent conversation history to show which skills you actually use vs. which are just taking up space. Scans Codex, Claude Code, and Hermes logs, distinguishes real usage from metadata noise, and provides ranked reports with cleanup recommendations."
-triggers: [skill-usage, analyze-skills, skill-stats]
+description: Use when the user asks to rank skills, analyze skill hit rate, audit missed skill calls, scan Codex/Claude/OpenClaw/Hermes/Cursor/agent session logs, compare strict skill invocations with noisy mentions, or investigate whether skill usage statistics missed session directories.
 ---
 
-# Skill Usage Analyzer
+# Skill Usage
 
-Use this skill when the user wants to:
-- Analyze which skills they actually use
-- Find out which skills are safe to remove
-- Get statistics on skill usage patterns
-- Understand their skill usage history
-- Clean up unused skills
+## Core Idea
 
-## Core Principle
+This skill audits skill usage by separating evidence into layers. A reliable ranking is not "grep every skill name and sort counts"; it is a pipeline that discovers all plausible session sources, separates strict invocation evidence from noisy mentions, and reports what was included, excluded, and still uncertain.
 
-Scan conversation logs from Codex, Claude Code, and Hermes to distinguish **real skill usage** (agent actually read SKILL.md or executed skill code) from **metadata noise** (skill name appeared in system prompt).
+Use Chinese for user-facing reports when the user is Chinese. Keep private prompts, raw log content, tokens, account data, and unrelated session text out of the report.
 
-## When To Use
+## Operating Rule
 
-- User asks "which skills do I use most?"
-- User asks "which skills can I safely delete?"
-- User wants to analyze skill usage patterns
-- User mentions "skill statistics" or "skill analytics"
-- User wants to clean up their skills directory
+Never promise universal coverage just because a scan ran. Promise a verifiable coverage audit:
 
-## When Not To Use
+1. What roots were scanned.
+2. What roots were discovered but excluded as noise.
+3. What was counted as strict usage.
+4. What was counted only as wide mention.
+5. What remains unknown or mixed.
 
-- User wants to install or update skills (use `skill-installer` instead)
-- User wants to create new skills (use `skill-creator` instead)
-- User wants to search for available skills (use `find-skills` instead)
+## Evidence Levels
 
-## How It Works
+| Field | Meaning | Use |
+| --- | --- | --- |
+| `strictCalls` | Strong evidence of real skill loading or invocation, such as explicit Skill tool calls or reading/opening `SKILL.md` with execution context. | Main ranking and resident/active decisions. |
+| `wideMentions` | Skill names or paths in prompts, system listings, permission rules, path tables, docs, or caches. | Demand/noise signal; not a hit-rate denominator by itself. |
+| `rawRefs` | Raw references before de-duplication by session/turn/skill. | Diagnostic use only. |
+| `strictSessions` | Sessions that contain strict evidence for a skill. | Breadth of actual use. |
+| `realRatio` | `strictCalls / wideMentions`. | Trigger quality/noise smell, not absolute quality. |
+| `strictSources` | Deduped source counts that match `strictCalls` semantics. | Source distribution in the main table. |
+| `rawSources` / `strictRawSources` | Raw source counts before dedupe. | Diagnostic use only. |
 
-### 1. Locate Conversation Logs
+## Required Workflow
 
-Scan these locations (cross-platform):
-- `$CODEX_HOME/sessions/**/*.jsonl` (Codex CLI)
-- `$CLAUDE_HOME/projects/**/*.jsonl` (Claude Code)
-- `$HERMES_HOME/*.jsonl` (Hermes)
+### 1. Inventory Local Skill Names
 
-Default homes:
-- Codex: `~/.codex`
-- Claude: `~/.claude`
-- Hermes: `~/.hermes`
+Before scanning logs, collect skill names from active, external, disabled, and plugin-cache layers:
 
-### 2. Parse Platform-Specific Formats
+- `%USERPROFILE%\.agents\skills`
+- `%USERPROFILE%\.agents\skills-external\incoming`
+- `%USERPROFILE%\.agents\skills-disabled`
+- `%USERPROFILE%\.codex\plugins\cache`
 
-**Codex**: Look for `response_item` records with:
-- `type: "function_call"` → check `arguments` field
-- `type: "function_call_output"` → check `output` field
+Normalize aliases only when they clearly point to the same skill. Preserve versioned names such as `code-1.0.4` unless the user asks for alias folding.
 
-**Claude Code**: Look for:
-- `type: "assistant"` with `tool_use` blocks → check `input` field
-- `name: "Skill"` with explicit skill invocation → record as high-confidence
-- `type: "user"` with `tool_result` → check `content` field
+### 2. Discover Transcript Sources
 
-**Hermes**: Look for:
-- `role: "assistant"` with `tool_calls` → check `function.arguments`
-- `role: "tool"` → check `content` field
+Read `references/coverage-and-noise-map.md` before a full audit. The minimum canonical roots are Codex sessions, archived sessions, rollout summaries, Claude projects, Hermes sessions/logs, OpenClaw sessions, Cursor project transcripts, and mini-agent logs.
 
-### 3. Extract Skill Names with Real Usage Detection
+For "don't miss anything" requests, also scan the supplement roots listed in that reference, then keep them separate unless they contain clean session-like evidence.
 
-Use regex patterns to match skill paths:
-```
-/.agents/skills/<name>
-/.codex/skills/<name>
-/.claude/skills/<name>
-/.hermes/skills/<name>
-/.codex/plugins/cache/*/skills/<name>
+### 3. Run The Scanner
+
+Bundled script:
+
+```powershell
+$skill = '<path-to-skill-usage>'
+$out = (Get-Location).Path
+$env:OUTPUT_DIR = $out
+Remove-Item Env:\INCLUDE_SQLITE -ErrorAction SilentlyContinue
+python "$skill\scripts\deep_skill_usage_scan.py"
 ```
 
-Handle JSON escaping (single, double, quadruple backslashes).
+Useful environment variables:
 
-**Real usage signals**:
-- Path includes subfile: `/skills/foo/SKILL.md` or `/skills/foo/reference.md`
-- Appears in real operation: `Read`, `Bash`, `cat`, `Get-Content`, `grep`, etc.
-- Multiple accesses in same turn (indicates active use, not just listing)
+| Variable | Purpose |
+| --- | --- |
+| `OUTPUT_DIR` | Directory for generated `skill-usage-*` reports. Defaults to current directory. |
+| `REPORT_SUFFIX` | Adds a sanitized suffix to output filenames, e.g. `-codex-logs`. Non filename-safe characters are replaced. |
+| `EXTRA_PATHS_FILE` | Text file containing additional paths, one per line. |
+| `ONLY_EXTRA=1` | Scan only paths from `EXTRA_PATHS_FILE`. |
+| `ONLY_SQLITE=1` | Scan only SQLite sources. |
+| `INCLUDE_SQLITE=1` | Include built-in and extra SQLite sources. Use for supplement scans, not canonical ranking. |
+| `SKIP_SQLITE=1` | Skip SQLite sources. |
+| `ONLY_SOURCES` | Comma-separated source labels to include. |
+| `MAX_TEXT_BYTES` | Max single text-file size to scan. Invalid values fall back to the default. |
 
-### 4. Deduplicate by Turn
+### 4. Produce Four Outputs
 
-Group by `(platform, sessionId, turnId, skillName)` to avoid counting:
-- Multiple file reads in same turn as separate uses
-- System prompt listings as usage
+Use `references/report-template.md` and always include:
 
-### 5. Calculate Metrics
+1. Canonical ranking: primary transcript/session roots only.
+2. Expanded session ranking: canonical plus newly discovered session-like supplement.
+3. Discovery audit: scanned roots, candidate counts, noise counts, unknown/mixed buckets.
+4. Recommendations: resident, external, alias, or description actions.
 
-For each skill:
-- `calls`: Total turn-deduplicated hits
-- `realCalls`: Hits with real usage signals
-- `sessions`: Unique sessions
-- `realSessions`: Sessions with real usage
-- `ratio`: calls / sessions (usage intensity)
-- `realRatio`: realCalls / calls * 100 (real usage percentage)
-- `firstSeen`, `lastSeen`: Date range
+For the recommendation pass, apply `references/recommendation-rules.md` instead of inventing ad hoc labels.
 
-### 6. Rank and Tier
+### 5. Interpret Results
 
-Sort by `realCalls` descending.
+Use these rules:
 
-Tiers:
-- ★★★ 主力 (real ≥ 100): Core dependencies
-- ★★ 常用 (real 20-99): Frequently used
-- ★ 偶用 (real 5-19): Occasionally useful
-- · 尝试 (real 1-4): Tried but not adopted
-- ○ 零使用 (real = 0): Never actually used (safe to remove)
+- High `strictCalls` and broad `strictSessions`: candidate for resident or thin active router entry.
+- High `wideMentions` but low `strictCalls`: likely system-prompt/path noise, weak trigger wording, or skill listed often but rarely loaded.
+- High demand terms in user tasks but low strict usage: improve description and add routing examples.
+- Low strict and low wide: keep archived/external unless strategically important.
+- Huge editor/opencode/request logs with millions of mentions: use as coverage evidence, not canonical ranking.
+- Built-in SQLite sources such as Codex logs/state are supplement scans by default; include them only when explaining coverage or duplication risk.
 
-### 7. Generate Report
+## Missed-Source Guardrail
 
-Output:
-1. **Console summary**: Top 60 skills, tier breakdown
-2. **JSON file**: `skill-usage-report.json` with full ranking
-3. **Cleanup recommendations**: List skills with `realCalls: 0`
+If a previous result looked too small, run a discovery pass before reranking:
 
-## Implementation
+1. Search for session-like files by path/name.
+2. Search for content hits containing `SKILL.md`, `.agents\skills`, `.codex\skills`, `.claude\skills`, `Available skills`, or `skill_name`.
+3. Classify candidates into primary, supplement, corpus, unknown, and noise.
+4. Explain why each supplement is or is not merged into the main ranking.
 
-The analyzer is implemented in `analyzer.js` (Node.js script).
+This guardrail is the part that was missing in the old workflow.
 
-When invoked:
-1. Run `node analyzer.js` from the skill directory
-2. Read the generated `skill-usage-report.json`
-3. Present the top 60 skills in a formatted table
-4. Show tier breakdown
-5. Highlight cleanup candidates (realCalls = 0)
+## When The User Asks For Parallel Subagents
 
-## Output Format
+If the user explicitly asks you to run multiple subagents, split the audit into disjoint read-only questions:
 
-### Console Report
+1. One subagent for coverage discovery and source boundaries.
+2. One subagent for ranking interpretation and noise detection.
+3. One subagent for output/template sanity and recommendation wording.
 
+Do not duplicate the same search in multiple subagents.
+
+## Common Mistakes
+
+- Treating `wideMentions` as usage.
+- Counting `git add .agents/skills/...`, permission allowlists, or "Available skills" inventories as strict calls.
+- Mixing request/system prompt logs into the main ranking without de-duplication.
+- Ignoring editor-side session stores such as Cursor/VS Code workspaceStorage, Trae/Windsurf history, opencode logs, or Codex desktop logs.
+- Reporting a top-N ranking without source coverage, skipped files, and noise boundaries.
+- Hiding uncertainty. If a bucket is mixed or noisy, say so.
+
+## Final Response Shape
+
+For user-facing summaries, lead with:
+
+```text
+结论：原流程漏的是“发现层”和“分层口径”，不是所有真实调用都漏了。
 ```
-=== Top 60 真实主力榜（按 realCalls 排序）===
-rank  real  calls  realSess  比值   真率   skill
-----  ----  -----  --------  -----  -----  ----------------------------------
-   1  1284   1287       380   3.39   100%  superpowers
-   2   410    427       232   1.79    96%  web-access
-   3   324    337        99   3.30    96%  jobs-design
-...
 
-=== 全部 skill 计数分布（按真实命中分梯队）===
-★★★ 主力 (real≥100): 18 个
-★★  常用 (real 20-99): 79 个
-★   偶用 (real 5-19): 114 个
-·   尝试 (real 1-4): 182 个
-○   仅列出/未真用 (real=0): 328 个
-```
+Then give:
 
-### JSON Schema
+- Main ranking top 20 or top 50.
+- Coverage numbers.
+- Missed/added roots.
+- Recommendations by action.
+- Paths to generated Markdown/CSV/JSON artifacts.
 
-See README.md for full schema.
-
-## Error Handling
-
-- If log directories don't exist, skip gracefully
-- If JSONL is malformed, skip that line and continue
-- If no skills found, report "No skill usage detected"
-- If analyzer.js fails, show error and suggest manual run
-
-## Privacy Note
-
-All analysis is local. No data is sent to external services.
-
-## Verification
-
-After running, verify:
-- JSON report exists and is valid
-- Top skills match user's intuition
-- Tier counts add up to total unique skills
-- Cleanup candidates (real=0) are actually unused
-
-## Next Steps After Analysis
-
-Suggest:
-- Review cleanup candidates before removing
-- Check if low-usage skills are recent installs
-- Consider archiving "尝试" tier skills for later
-- Keep "主力" and "常用" tier skills
-
-## Example Invocation
-
-User: "Which skills do I actually use?"
-
-Agent:
-1. Invoke this skill
-2. Run analyzer
-3. Present top 20 skills
-4. Show tier breakdown
-5. Highlight any skills with 0 real usage
-6. Ask if user wants full report or cleanup recommendations
+Keep raw session content out of the answer.

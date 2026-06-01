@@ -1,38 +1,41 @@
 {
   "name": "skill-usage",
-  "version": "1.0.0",
-  "description": "Analyze AI agent conversation history to show which skills you actually use vs. which are just taking up space.",
+  "version": "1.1.0",
+  "description": "Audit skill usage with strict-call evidence, noisy-mention separation, and source coverage reports.",
   "author": {
-    "name": "Skill Usage Maintainers"
+    "name": "DOIT-Ben"
   },
   "homepage": "https://github.com/DOIT-Ben/skill-usage",
   "repository": "https://github.com/DOIT-Ben/skill-usage",
   "license": "MIT",
   "keywords": [
-    "skill",
+    "skills",
     "usage",
-    "analytics",
-    "statistics",
-    "cleanup",
-    "analysis",
-    "conversation-history"
+    "ranking",
+    "audit",
+    "coverage",
+    "analytics"
   ],
-  "skills": "./",
+  "skills": [
+    "./SKILL.md"
+  ],
   "interface": {
-    "displayName": "Skill Usage Analyzer",
-    "shortDescription": "Analyze which skills you actually use.",
-    "longDescription": "Scans Codex, Claude Code, and Hermes conversation logs to show which skills you actually use, how often, and which ones are safe to remove. Distinguishes real usage from metadata noise.",
-    "developerName": "Skill Usage Maintainers",
+    "displayName": "Skill Usage Auditor",
+    "shortDescription": "Rank skill usage with coverage auditing.",
+    "longDescription": "Audits skill usage across session sources, separates strict invocation evidence from noisy mentions, and produces canonical ranking plus supplement reports.",
+    "developerName": "DOIT-Ben",
     "category": "Productivity",
     "capabilities": [
-      "Read"
+      "Read",
+      "Write",
+      "Interactive"
     ],
     "websiteURL": "https://github.com/DOIT-Ben/skill-usage",
     "defaultPrompt": [
-      "Analyze my skill usage history",
-      "Which skills do I actually use?",
-      "Show me which skills I can safely remove"
+      "Use skill-usage to rank skills by real usage.",
+      "Run a canonical skill usage audit and show me the top skills.",
+      "Audit skill hit rate and explain what is noise versus real invocation."
     ],
-    "brandColor": "#10B981"
+    "brandColor": "#2563EB"
   }
 }
