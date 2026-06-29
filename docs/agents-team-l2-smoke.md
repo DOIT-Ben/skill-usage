@@ -22,6 +22,15 @@ into `main` without a separate decision.
 - Exit code: `0`
 - Result: `team collaboration project adapter: valid`
 
+## Preflight failure
+
+- Symptom: the first projected adapter replaced the existing AGENTS.md and the
+  comparison showed 117 deleted lines.
+- Root cause: initialization was run against an empty local projection rather
+  than a complete checkout, so existing project rules were absent.
+- Correction: restored the complete existing AGENTS.md and appended only the
+  managed collaboration block. The final comparison has zero deletions.
+
 ## GitHub gate evidence
 
 Pending. The trial first submits intentionally incomplete PR evidence to prove
