@@ -2,6 +2,7 @@
 name: Collaboration Gate
 
 on:
+  push:
   pull_request:
   workflow_dispatch:
 
@@ -18,7 +19,9 @@ jobs:
       - name: Validate team collaboration project adapter
         run: python .codex/scripts/validate_team_collaboration.py .
       - name: Validate PR, linked Issue, and current-head evidence
-        if: github.event_name == 'pull_request'
+        if: >-
+          github.event_name == 'pull_request' ||
+          (github.event_name == 'push' && github.ref_name != github.event.repository.default_branch)
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: python .codex/scripts/validate_pr_contract.py --event "$GITHUB_EVENT_PATH"

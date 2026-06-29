@@ -9,6 +9,7 @@ import os
 import re
 import sys
 import urllib.error
+import urllib.parse
 import urllib.request
 from datetime import datetime
 from pathlib import Path
@@ -99,13 +100,49 @@ def fetch_issue(repo: str, number: int, token: str) -> str:
         raise RuntimeError(f"cannot read linked Issue: {exc}") from exc
 
 
+def fetch_pull_request(repo: str, branch: str, token: str) -> dict[str, object]:
+    owner = repo.split("/", 1)[0]
+    query = urllib.parse.urlencode({"state": "open", "head": f"{owner}:{branch}"})
+    request = urllib.request.Request(
+        f"https://api.github.com/repos/{repo}/pulls?{query}",
+        headers={"Accept": "application/vnd.github+json", "Authorization": f"Bearer {token}", "User-Agent": "agents-team-gate"},
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=20) as response:
+            pulls = json.loads(response.read().decode("utf-8"))
+    except (urllib.error.HTTPError, urllib.error.URLError, json.JSONDecodeError) as exc:
+        raise RuntimeError(f"cannot find pull request for pushed branch: {exc}") from exc
+    if not isinstance(pulls, list) or len(pulls) != 1 or not isinstance(pulls[0], dict):
+        raise RuntimeError(f"expected exactly one open pull request for branch {branch}")
+    return pulls[0]
+
+
+def pull_request_from_event(event: dict[str, object], token: str) -> dict[str, object]:
+    pull_request = event.get("pull_request")
+    if isinstance(pull_request, dict) and pull_request:
+        return pull_request
+    ref = str(event.get("ref") or "")
+    repo_data = event.get("repository")
+    repo = str(repo_data.get("full_name") or "") if isinstance(repo_data, dict) else ""
+    if not ref.startswith("refs/heads/") or not event.get("after") or not repo:
+        raise RuntimeError("event is neither a pull_request nor a branch push")
+    if not token:
+        raise RuntimeError("GITHUB_TOKEN is required to resolve a pushed branch to its open PR")
+    return fetch_pull_request(repo, ref.removeprefix("refs/heads/"), token)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--event", type=Path, required=True)
     parser.add_argument("--issue-body-file", type=Path)
     args = parser.parse_args()
     event = json.loads(args.event.read_text(encoding="utf-8"))
-    pull_request = event.get("pull_request") or {}
+    token = os.environ.get("GITHUB_TOKEN", "")
+    try:
+        pull_request = pull_request_from_event(event, token)
+    except RuntimeError as exc:
+        print(f"Agents-Team gate blocked: {exc}")
+        return 1
     if pull_request.get("draft"):
         print("draft PR: strict contract deferred until ready for review")
         return 0
@@ -120,7 +157,6 @@ def main() -> int:
         if args.issue_body_file:
             issue_body = args.issue_body_file.read_text(encoding="utf-8")
         else:
-            token = os.environ.get("GITHUB_TOKEN", "")
             if not token:
                 print("Agents-Team gate blocked: GITHUB_TOKEN is required")
                 return 1
