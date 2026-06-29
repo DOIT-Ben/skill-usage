@@ -1,0 +1,71 @@
+{
+  "$schema": "./schemas/team-collaboration.schema.json",
+  "mechanism": {
+    "id": "agents-team",
+    "pluginVersion": "0.3.0",
+    "protocolVersion": "2.0.0",
+    "configSchemaVersion": 2,
+    "initializedAt": "2026-06-29T16:21:03Z",
+    "lastUpgradedAt": null
+  },
+  "project": {
+    "name": "agents-team-skill-usage-pZ4IrA",
+    "type": "generic",
+    "repository": "DOIT-Ben/skill-usage",
+    "defaultBranch": "main"
+  },
+  "commands": {
+    "test": "",
+    "build": "",
+    "lint": "",
+    "typecheck": "",
+    "e2e": ""
+  },
+  "paths": {
+    "frontend": [],
+    "backend": [],
+    "database": [],
+    "deployment": [],
+    "tests": []
+  },
+  "risk": {
+    "criticalPaths": [],
+    "protectedFiles": [],
+    "productionPaths": [],
+    "realProviderPaths": []
+  },
+  "overrides": {
+    "requireIssueForL1": false,
+    "requireRealSmokeForRelease": true
+  },
+  "enforcement": {
+    "mode": "strict",
+    "failClosedRisks": [
+      "L2",
+      "L3"
+    ],
+    "requireLinkedIssue": {
+      "L1": false,
+      "L2": true,
+      "L3": true
+    },
+    "requireIndependentQA": {
+      "L1": false,
+      "L2": true,
+      "L3": true
+    },
+    "requireFailureRecord": true
+  },
+  "managedFiles": {
+    ".codex/schemas/team-collaboration.schema.json": "sha256:3df7800f6802146c496da6241dab8be0e97687c7fcc097a110e6ea9457de96e7",
+    ".codex/scripts/doctor_team_collaboration.py": "sha256:5026a93cc571e8ef3ee16ab83b1ab77e026d040d0894332d2ead5f08a203b084",
+    ".codex/scripts/validate_pr_contract.py": "sha256:de378f6eb075566d1f2ab86ebd6e3e8c0f51a3e157f29538dc0b8faa6bea58e2",
+    ".codex/scripts/validate_team_collaboration.py": "sha256:9527cab3b26c5c9111850e125d8fec2a7414017201a8b42feabc2bff15926f25",
+    ".github/ISSUE_TEMPLATE/critical-goal.yml": "sha256:816e620235b01037a5b4009de8b2ff1d30c1ab66beb6e1b31bff2999545bf9d9",
+    ".github/ISSUE_TEMPLATE/team-goal.yml": "sha256:5708e9c0bdff27fc2fa2e26d6d8c782cb3d4c2249aac9be772b32c66faef5a44",
+    ".github/pull_request_template.md": "sha256:96953d71fedc2939255e89f9baaf42c79f5c51a70bfd67badaf95f2ece660eac",
+    ".github/workflows/collaboration-gate.yml": "sha256:72d5d4911057e0ab30963e39b0dedc3664602a14da2cc4bb43f8055af5722e1e",
+    "docs/adr/README.md": "sha256:eac61dad3e66bc2adf9fd75f0bd43e30d55a77a6d4a3957df474bf7f723a64ff",
+    "AGENTS.md#TEAM-COLLABORATION": "sha256:c82f5150a2d2a8aa1bb41ff7cbefa9469ab12329e96ea02a342ce0b0bb61f8dd"
+  }
+}
