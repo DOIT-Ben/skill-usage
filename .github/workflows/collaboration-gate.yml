@@ -4,6 +4,7 @@ name: Collaboration Gate
 on:
   push:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, edited]
   workflow_dispatch:
 
 permissions:

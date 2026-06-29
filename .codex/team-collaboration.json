@@ -64,7 +64,7 @@
     ".github/ISSUE_TEMPLATE/critical-goal.yml": "sha256:816e620235b01037a5b4009de8b2ff1d30c1ab66beb6e1b31bff2999545bf9d9",
     ".github/ISSUE_TEMPLATE/team-goal.yml": "sha256:5708e9c0bdff27fc2fa2e26d6d8c782cb3d4c2249aac9be772b32c66faef5a44",
     ".github/pull_request_template.md": "sha256:96953d71fedc2939255e89f9baaf42c79f5c51a70bfd67badaf95f2ece660eac",
-    ".github/workflows/collaboration-gate.yml": "sha256:2dce0d69007e2f8fd50e55b06668ad1436633e0524f471dcfd197c8d1fffb604",
+    ".github/workflows/collaboration-gate.yml": "sha256:edb1be4889b2e458be6d50ddedc31c5c7e675744aa6bd5f6b1b15395c95d773b",
     "docs/adr/README.md": "sha256:eac61dad3e66bc2adf9fd75f0bd43e30d55a77a6d4a3957df474bf7f723a64ff",
     "AGENTS.md#TEAM-COLLABORATION": "sha256:c82f5150a2d2a8aa1bb41ff7cbefa9469ab12329e96ea02a342ce0b0bb61f8dd"
   }
